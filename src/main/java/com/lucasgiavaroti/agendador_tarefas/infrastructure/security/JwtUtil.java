@@ -5,25 +5,32 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
 
 @Service
 public class JwtUtil {
 
     // Chave secreta usada para assinar e verificar tokens JWT
-    private final String secretKey = "9bcd498cf3c664639d61d91ad13c37471faf9829128168a8ad219f2edcfe23a60541e2202e420837ecb22c322caf4bb61845a0ac52a32e74b7c2022164a9f46243f36492ca503f524db2e91046afddb662094886d3a9bb2ffc9a8dc3f7419130671eefd27ab15630a7fec376fc19c5776624643771236b38e7a395d14d74db8c0634558d1347c6d3e71bfcd23448f21a423945a1061cc8434b78ba548838597f9cb0fae790947be7dd3fca11e32ba5e5720e5ed8fc2c13ad7f395500b3191dbf43f7f9578ab7106bbfc6407a7f05dbec5760da189603397f6cb87e94801721845b702654acb119a1833287d5b6701d62be5f4007f5affe2078167dd216904923";
+    private static final String SECRET = "9bcd498cf3c664639d61d91ad13c37471faf9829128168a8ad219f2edcfe23a60541e2202e420837ecb22c322caf4bb61845a0ac52a32e74b7c2022164a9f46243f36492ca503f524db2e91046afddb662094886d3a9bb2ffc9a8dc3f7419130671eefd27ab15630a7fec376fc19c5776624643771236b38e7a395d14d74db8c0634558d1347c6d3e71bfcd23448f21a423945a1061cc8434b78ba548838597f9cb0fae790947be7dd3fca11e32ba5e5720e5ed8fc2c13ad7f395500b3191dbf43f7f9578ab7106bbfc6407a7f05dbec5760da189603397f6cb87e94801721845b702654acb119a1833287d5b6701d62be5f4007f5affe2078167dd216904923";
+
+    private SecretKey getSecretKey() {
+        byte[] keyBytes = Base64.getDecoder().decode(SECRET);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
     // Extrai as claims do token JWT (informações adicionais do token)
     public Claims extractClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8))) // Define a chave secreta para validar a assinatura do token
+                .verifyWith(getSecretKey()) // Define a chave secreta para validar a assinatura do token
                 .build()
-                .parseClaimsJws(token) // Analisa o token JWT e obtém as claims
-                .getBody(); // Retorna o corpo das claims
+                .parseSignedClaims(token) // Analisa o token JWT e obtém as claims
+                .getPayload(); // Retorna o corpo das claims
     }
 
-    // Extrai o email de usuário do token JWT
+    /// Extrai o email de usuário do token JWT
     public String extractEmail(String token) {
         // Obtém o assunto (nome de usuário) das claims do token
         return extractClaims(token).getSubject();
